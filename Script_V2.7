@@ -1,0 +1,128 @@
+#!/bin/bash
+
+#one line to give the program's name and an idea of what it does.
+#Copyright (C) yyyy  name of author
+
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 2
+#of the License, or (at your option) any later version.
+
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+htmladd=""
+#--------- Stockage de la date dans une variable ---------
+
+dat=$(date)
+
+#--------- Détection des erreurs de Syntaxe et des erreurs de fichier source  --------- 
+
+if [ $# -le 2 ]
+then
+ echo -e "                                      \033[31m ERREUR DE SYNTAXE \033[0m"
+ echo -e ""
+ echo -e "La Syntaxe est: ./Script_V2.7 \"Nom du fichier contenant les adresses IP\" \"Nom De l'html à crée\" \"Votre adresse mail"
+fi
+
+if [ ! -e  $1 ]
+then
+ echo -e  "                       \033[31m ERREUR : LE FICHIER SOURCE  N'EXISTE PAS !!\033[0m"  
+ echo -e ""
+ echo -e "La Syntaxe est: ./Script_V2.7 \"Nom du fichier contenant les adresses IP\" \"Nom De l'html à crée\" \"Votre adresse mail"
+fi
+
+#------ Si le fichier source est non nul et qu'il y a bien 2 argument la boucle de testing d'ip ce lance avec chaques ip contenue dans le fihcier source ------
+#------ La boucle ping les adresse contenue dans la liste ajoutée dans l'argument du script et vérifie si l'adresse est joingable ou non et stock le resultat -----
+#------ Dans une variable pour pouvoir l'utiliser dans le tableau html ------
+
+if [ -e $1 ] && [ $# -eq 3 ]
+then
+ echo "------ TEST DU RESEAU DE L'ENTREPRISE \"BUNNY\" ------"
+ echo "=> DATE : $dat"
+ for a in $(cat $1)
+  do
+   echo -ne "=> $a "
+   result=$(ping -w 1 $a -c 1)
+   status=$(echo $result | grep "100% packet loss" )    
+   if [ -z "$status" ]
+   then
+     echo -e  "\033[32m [  OK  ] \033[0m"
+     htmladd="$htmladd <tr> <td> $a </td>  <td style=\"background-color: lightgreen;\"> [ OK ] </td>  </tr>"
+   else
+     echo -e  "\033[31m [ERREUR] \033[0m"
+     htmladd="$htmladd <tr> <td> $a </td> <td style=\"background-color: lightcoral;\"> [ ERREUR ] </td> </tr>"
+   fi
+  done
+echo "--------------- FIN DU TEST RESEAU ---------------"
+fi
+
+#------ Création de l'html avec les IP et leur resultat dans un tableau ------
+
+if [ -e $1 ] && [ $# -eq 3 ]
+then
+   echo "To: antonin.cosse@gmail.com" > $2
+   echo "Subject: PING MAIL SIO1" >> $2
+   echo "Content-Type: text/html; charset=\"us-ascii\"" >> $2
+   echo "" >> $2
+   echo "<!DOCTYPE HTML>" >> $2
+   echo "<html lang\"FR\">" >> $2
+   echo "<head>" >> $2
+   echo " <meta charset=\"UTF-8\">" >> $2
+   echo "    <style>" >> $2
+   echo "        body{" >> $2
+   echo "            background-color: aliceblue;" >>$2
+   echo "            margin: auto;" >> $2
+   echo "            text-align: center;" >> $2
+   echo "            padding: 15px;" >> $2
+   echo "         }" >> $2
+   echo "         table{" >> $2
+   echo "             border: solid 1px black;" >> $2
+   echo "             margin: auto;" >> $2
+   echo "             background-color: aliceblue;" >> $2
+   echo "             height: 100px;" >> $2
+   echo "         }" >> $2
+   echo "         td{" >> $2
+   echo "           text-align: center;" >> $2
+   echo "           border: solid 1px black;" >> $2
+   echo "           background-color: khaki;" >> $2
+   echo "           width: 100px" >>$2
+   echo "         }" >> $2
+   echo "         h2{" >> $2
+   echo "           background-color: goldenrod;" >> $2
+   echo "           text-align: center;" >> $2
+   echo "         }" >> $2
+   echo "         th{" >> $2
+   echo "           background-color: indianred;" >> $2
+   echo "           border: solid 1px black;" >> $2
+   echo "           width: 100px" >> $2
+   echo "         }" >> $2
+   echo "         h3{" >>$2
+   echo "           text-align: center;" >> $2
+   echo "         }"  >> $2
+   echo "    </style>" >> $2
+   echo "</head>" >> $2
+   echo "<body>" >> $2
+   echo " <h2> Script Planifié : Test du réseau de l'entreprise : \"Bunny\" </h2>" >> $2
+   echo " <h3> $dat </h3>" >> $2
+   echo "<table>" >> $2
+   echo "    <tr>" >> $2
+   echo "     <th>Adresse IP </th>" >> $2
+   echo "     <th>Status</th>" >> $2
+   echo "    </tr> " >> $2
+   echo $htmladd >> $2
+    echo "</table>" >> $2
+    echo " <h2> Fin du Test Reseau </h2> " >> $2
+    echo "</body>" >> $2
+    echo "</html>" >> $2
+# ------ Envoie Du mail a l'adresse convenue dans le 3eme argument du script -----
+    mail=$(/usr/sbin/sendmail $3  < "$2")
+    echo $mail
+fi 
+ 
